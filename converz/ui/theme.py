@@ -78,9 +78,24 @@ def apply(accent_hex: str = DEFAULT_ACCENT, base_key: str = DEFAULT_BASE) -> Non
     STYLE = _build_style()
 
 
-# Segoe UI for Latin, Leelawadee UI is the modern Thai font that ships with Windows.
-FAMILIES = ["Segoe UI Variable Text", "Segoe UI", "Leelawadee UI",
-            "Noto Sans Thai", "Noto Sans", "Loma", "sans-serif"]
+# Prompt (Thai + Latin, SIL Open Font License) ships inside the app in assets/fonts.
+# The rest are fallbacks in case the font files are missing.
+FAMILIES = ["Prompt", "Leelawadee UI", "Segoe UI", "Noto Sans Thai", "Loma", "sans-serif"]
+_fonts_loaded = False
+
+
+def load_fonts() -> None:
+    """Register the bundled fonts. Call once after QApplication is created."""
+    global _fonts_loaded
+    if _fonts_loaded:
+        return
+    from PySide6.QtGui import QFontDatabase
+    folder = asset("fonts")
+    if os.path.isdir(folder):
+        for name in sorted(os.listdir(folder)):
+            if name.lower().endswith((".ttf", ".otf")):
+                QFontDatabase.addApplicationFont(os.path.join(folder, name))
+    _fonts_loaded = True
 
 
 def font(px: float, weight: QFont.Weight = QFont.Weight.Normal) -> QFont:

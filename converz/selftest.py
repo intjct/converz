@@ -81,6 +81,11 @@ def selftest() -> int:
         from .ui.donut import Donut
         from .ui.mainwindow import MainWindow
         app = QApplication.instance() or QApplication([])
+        from .ui import theme
+        from PySide6.QtGui import QFontInfo
+        theme.load_fonts()
+        if QFontInfo(theme.font(13)).family() != "Prompt":
+            raise RuntimeError("bundled Prompt font not loaded: " + QFontInfo(theme.font(13)).family())
         d1 = Donut()
         d1.show_menu([jpg, png])
         w = MainWindow(Settings())

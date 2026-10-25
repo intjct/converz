@@ -353,6 +353,7 @@ def main(argv: list[str] | None = None) -> int:
     qapp.setApplicationName(APP_NAME)
     qapp.setQuitOnLastWindowClosed(False)
     qapp.setWindowIcon(theme.app_icon())
+    theme.load_fonts()
     qapp.setFont(theme.font(13))
 
     if send_to_running(files, background):

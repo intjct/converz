@@ -85,4 +85,4 @@ python -m converz
 | `.github/workflows/build.yml` | สูตรให้ GitHub สร้าง .exe |
 
 ## License
-โค้ดของ Converz ใช้สัญญาอนุญาต MIT · ตัวโปรแกรมที่สร้างแล้วมี [FFmpeg](https://ffmpeg.org) (GPL) แนบมาด้วยสำหรับแปลงวิดีโอและเสียง
+โค้ดของ Converz ใช้สัญญาอนุญาต MIT · ตัวโปรแกรมที่สร้างแล้วมี [FFmpeg](https://ffmpeg.org) (GPL) แนบมาด้วยสำหรับแปลงวิดีโอและเสียง · ฟอนต์ [Prompt](https://fonts.google.com/specimen/Prompt) โดย Cadson Demak ใช้สัญญาอนุญาต SIL Open Font License (`assets/fonts/OFL.txt`)

@@ -11,6 +11,7 @@ a = Analysis(
     pathex=["."],
     binaries=ffmpeg,
     datas=[("assets/converz.ico", "assets"), ("assets/converz.png", "assets"),
+           ("assets/fonts", "assets/fonts"),
            ("LICENSE", ".")] + ffmpeg_license,
     hiddenimports=["pillow_heif"],
     excludes=["tkinter", "PySide6.QtQml", "PySide6.QtQuick", "PySide6.QtQuickWidgets",
