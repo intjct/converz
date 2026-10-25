@@ -104,7 +104,7 @@ class Toast(QWidget):
             p.drawRoundedRect(card.adjusted(-i, -i + 3, i, i + 3), 16 + i, 16 + i)
         path = QPainterPath()
         path.addRoundedRect(card, 16, 16)
-        p.fillPath(path, QColor("white"))
+        p.fillPath(path, theme.CARD)
         p.setPen(QPen(theme.LINE, 1))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawPath(path)
@@ -155,7 +155,7 @@ class Toast(QWidget):
         if self.can_cancel:
             r = self._cancel_rect()
             p.setPen(QPen(theme.RED if self._hover_cancel else theme.LINE, 1))
-            p.setBrush(QColor("#FFF5F5") if self._hover_cancel else QColor("white"))
+            p.setBrush(theme.mix(theme.CARD, theme.RED, 0.1) if self._hover_cancel else theme.CARD)
             p.drawRoundedRect(r, 8, 8)
             p.setPen(theme.RED if self._hover_cancel else theme.TEXT_SOFT)
             p.setFont(theme.font(12))

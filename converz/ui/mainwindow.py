@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from PySide6.QtCore import QPropertyAnimation, QRectF, QSize, Qt, Signal, Property, QEasingCurve
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
-from PySide6.QtWidgets import (QAbstractButton, QButtonGroup, QFileDialog, QFrame, QHBoxLayout,
-                               QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget)
+from PySide6.QtCore import QPointF
+from PySide6.QtWidgets import (QAbstractButton, QButtonGroup, QColorDialog, QFileDialog, QFrame,
+                               QGridLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea,
+                               QVBoxLayout, QWidget)
+import math
 
 from .. import APP_NAME, VERSION
 from ..settings import Settings
@@ -57,14 +60,14 @@ class Switch(QAbstractButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(0, 0, 44, 26)
-        off, on = QColor("#D9D8E3"), theme.ACCENT
+        off, on = theme.SWITCH_OFF, theme.ACCENT
         t = self._pos
         col = QColor(int(off.red() + (on.red() - off.red()) * t), int(off.green() + (on.green() - off.green()) * t),
                      int(off.blue() + (on.blue() - off.blue()) * t))
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(col)
         p.drawRoundedRect(r, 13, 13)
-        p.setBrush(QColor("white"))
+        p.setBrush(QColor("white") if not theme.IS_DARK or t > 0.5 else theme.TEXT_SOFT)
         p.drawEllipse(QRectF(3 + 18 * t, 3, 20, 20))
 
 
@@ -112,8 +115,8 @@ class DropZone(QFrame):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
-        p.setBrush(theme.ACCENT_SOFT if self._hover else QColor("white"))
-        pen = QPen(theme.ACCENT if self._hover else QColor("#D5D3E3"), 1.6, Qt.PenStyle.DashLine)
+        p.setBrush(theme.ACCENT_SOFT if self._hover else theme.CARD)
+        pen = QPen(theme.ACCENT if self._hover else theme.DASH, 1.6, Qt.PenStyle.DashLine)
         pen.setDashPattern([5, 4])
         p.setPen(pen)
         p.drawRoundedRect(r, 16, 16)
@@ -141,6 +144,99 @@ class DropZone(QFrame):
         e.accept()
         if files:
             self.files_dropped.emit(files)
+
+
+class ColorDot(QAbstractButton):
+    """A round color you can pick (main color)."""
+    def __init__(self, hex_color: str, name: str):
+        super().__init__()
+        self.hex = hex_color
+        self.setCheckable(True)
+        self.setToolTip(name)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedSize(32, 32)
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = QColor(self.hex)
+        if self.isChecked():
+            p.setPen(QPen(theme.TEXT, 2))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawEllipse(QRectF(1, 1, 30, 30))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(c)
+        r = 11 if self.isChecked() else (13 if self.underMouse() else 12)
+        p.drawEllipse(QPointF(16, 16), r, r)
+
+
+class BaseTile(QAbstractButton):
+    """A background choice: small preview of the card color + its name."""
+    def __init__(self, key: str):
+        super().__init__()
+        self.key = key
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedSize(54, 62)
+
+    def paintEvent(self, _):
+        b = theme.BASES[self.key]
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        box = QRectF(5, 3, 44, 36)
+        p.setPen(QPen(theme.ACCENT if self.isChecked() else theme.DASH, 2.2 if self.isChecked() else 1))
+        p.setBrush(QColor(b["bg"]))
+        p.drawRoundedRect(box, 10, 10)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(b["card"]))
+        p.drawRoundedRect(box.adjusted(7, 7, -7, -7), 5, 5)
+        p.setBrush(theme.ACCENT)
+        p.drawEllipse(QPointF(box.center().x(), box.center().y()), 4, 4)
+        p.setPen(theme.TEXT if self.isChecked() else theme.TEXT_SOFT)
+        p.setFont(theme.font(11.5, QFont.Weight.DemiBold if self.isChecked() else QFont.Weight.Normal))
+        p.drawText(QRectF(0, 42, 54, 18), Qt.AlignmentFlag.AlignCenter, b["label"])
+
+
+class MiniDonut(QWidget):
+    """Live preview of the donut in the chosen colors."""
+    def __init__(self):
+        super().__init__()
+        self.setFixedSize(118, 118)
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = QPointF(59, 59)
+        ro, ri, n = 54, 21, 6
+        p.setPen(QPen(theme.LINE, 1))
+        p.setBrush(theme.CARD)
+        p.drawEllipse(c, ro, ro)
+        for i in range(n):
+            a = math.radians(90 - i * 60 + 30)
+            p.drawLine(QPointF(c.x() + ri * math.cos(a), c.y() - ri * math.sin(a)),
+                       QPointF(c.x() + (ro - 1) * math.cos(a), c.y() - (ro - 1) * math.sin(a)))
+        # selected slice (the 2nd one, clockwise from the top)
+        from PySide6.QtGui import QPainterPath
+        outer = QRectF(c.x() - ro + 3, c.y() - ro + 3, 2 * (ro - 3), 2 * (ro - 3))
+        inner = QRectF(c.x() - ri - 3, c.y() - ri - 3, 2 * (ri + 3), 2 * (ri + 3))
+        start, sweep = 90 - 60 + 30 - 1.5, -57
+        path = QPainterPath()
+        path.arcMoveTo(outer, start)
+        path.arcTo(outer, start, sweep)
+        path.arcTo(inner, start + sweep, -sweep)
+        path.closeSubpath()
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(theme.ACCENT)
+        p.drawPath(path)
+        p.setBrush(theme.ACCENT_SOFT)
+        p.drawEllipse(c, ri - 3, ri - 3)
+        p.setFont(theme.font(10.5, QFont.Weight.Bold))
+        labels = ["PNG", "JPG", "PDF", "WEBP", "ICO", "BMP"]
+        for i, t in enumerate(labels):
+            a = math.radians(90 - i * 60)
+            x, y = c.x() + 38 * math.cos(a), c.y() - 38 * math.sin(a)
+            p.setPen(theme.ON_ACCENT if i == 1 else theme.TEXT)
+            p.drawText(QRectF(x - 20, y - 8, 40, 16), Qt.AlignmentFlag.AlignCenter, t)
 
 
 def _card() -> tuple[QFrame, QVBoxLayout]:
@@ -307,14 +403,17 @@ class MainWindow(QWidget):
         self._refresh_folder()
         lay.addWidget(card)
 
+        # colors
+        lay.addWidget(self._colors_card())
+
         # toggles
         card, c = _card()
         w, _ = _toggle_row("เปิดพร้อม Windows", "พร้อมใช้ทันทีทุกครั้งที่เปิดเครื่อง",
                            self.s.start_with_windows, lambda v: self._set("start_with_windows", v))
         c.addWidget(w)
         line = QFrame()
+        line.setObjectName("Sep")
         line.setFixedHeight(1)
-        line.setStyleSheet(f"background:{theme.LINE.name()};")
         c.addWidget(line)
         w, _ = _toggle_row("เมนูคลิกขวา", "คลิกขวาที่ไฟล์ → ส่งไปยัง (Send to) → Converz",
                            self.s.send_to_menu, lambda v: self._set("send_to_menu", v))
@@ -335,6 +434,105 @@ class MainWindow(QWidget):
         foot.addWidget(v, 1)
         foot.addWidget(quit_btn)
         lay.addLayout(foot)
+
+    # ---------------------------------------------------------------- colors
+
+    def _colors_card(self) -> QFrame:
+        card, c = _card()
+        head = QHBoxLayout()
+        head.addWidget(_title("สีของโปรแกรม"))
+        head.addStretch()
+        reset = QPushButton("ใช้สีเดิม")
+        reset.setObjectName("Link")
+        reset.setFont(theme.font(12))
+        reset.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset.clicked.connect(lambda: self._set_colors(theme.DEFAULT_ACCENT, theme.DEFAULT_BASE))
+        head.addWidget(reset)
+        c.addLayout(head)
+
+        row = QHBoxLayout()
+        row.setSpacing(14)
+        left = QVBoxLayout()
+        left.setSpacing(8)
+        l1 = QLabel("สีหลัก")
+        l1.setObjectName("Soft")
+        l1.setFont(theme.font(12))
+        left.addWidget(l1)
+        grid = QGridLayout()
+        grid.setSpacing(4)
+        self.dots: list[ColorDot] = []
+        for i, (hx, name) in enumerate(theme.ACCENTS):
+            d = ColorDot(hx, name)
+            d.clicked.connect(lambda _=False, hx=hx: self._set_colors(hx, self.s.base_color))
+            grid.addWidget(d, i // 6, i % 6)
+            self.dots.append(d)
+        left.addLayout(grid)
+        more_row = QHBoxLayout()
+        more = QPushButton("+ สีอื่นๆ")
+        more.setObjectName("Ghost")
+        more.setFont(theme.font(12))
+        more.setCursor(Qt.CursorShape.PointingHandCursor)
+        more.clicked.connect(self._pick_custom_color)
+        self.custom_dot = ColorDot(self.s.accent_color, "สีที่เลือกเอง")
+        self.custom_dot.setChecked(True)
+        self.custom_dot.setEnabled(False)
+        more_row.addWidget(more)
+        more_row.addWidget(self.custom_dot)
+        more_row.addStretch()
+        left.addLayout(more_row)
+        row.addLayout(left, 1)
+        self.preview = MiniDonut()
+        row.addWidget(self.preview, 0, Qt.AlignmentFlag.AlignTop)
+        c.addLayout(row)
+
+        l2 = QLabel("สีพื้น")
+        l2.setObjectName("Soft")
+        l2.setFont(theme.font(12))
+        c.addWidget(l2)
+        bases = QHBoxLayout()
+        bases.setSpacing(4)
+        self.tiles: list[BaseTile] = []
+        for key in theme.BASES:
+            t = BaseTile(key)
+            t.clicked.connect(lambda _=False, key=key: self._set_colors(self.s.accent_color, key))
+            bases.addWidget(t)
+            self.tiles.append(t)
+        bases.addStretch()
+        c.addLayout(bases)
+        self._refresh_color_marks()
+        return card
+
+    def _refresh_color_marks(self):
+        cur = self.s.accent_color.upper()
+        preset = False
+        for d in self.dots:
+            on = d.hex.upper() == cur
+            preset |= on
+            d.setChecked(on)
+        self.custom_dot.hex = self.s.accent_color
+        self.custom_dot.setVisible(not preset)
+        for t in self.tiles:
+            t.setChecked(t.key == self.s.base_color)
+
+    def _pick_custom_color(self):
+        col = QColorDialog.getColor(QColor(self.s.accent_color), None, "เลือกสีหลัก")
+        if col.isValid():
+            self._set_colors(col.name().upper(), self.s.base_color)
+
+    def _set_colors(self, accent: str, base: str):
+        self.s.accent_color, self.s.base_color = accent, base
+        self.s.save()
+        theme.apply(accent, base)
+        self.apply_theme()
+        self.settings_changed.emit("colors")
+
+    def apply_theme(self):
+        self.setStyleSheet(theme.STYLE)
+        self._refresh_key_info()
+        self._refresh_color_marks()
+        for w in self.findChildren(QWidget):
+            w.update()
+        self.update()
 
     # ---------------------------------------------------------------- handlers
 

@@ -25,6 +25,8 @@ class Settings:
     start_with_windows: bool = True
     send_to_menu: bool = True
     first_run_done: bool = False
+    accent_color: str = "#6C5CE7"      # main color (buttons, selected slice)
+    base_color: str = "white"          # background: white / gray / cream / sky / pink / dark
     usage: dict = field(default_factory=dict)
 
     @property
@@ -46,6 +48,10 @@ class Settings:
             s.trigger_key = "ctrl"
         if s.quality not in ("small", "balanced", "best"):
             s.quality = "balanced"
+        if s.base_color not in ("white", "gray", "cream", "sky", "pink", "dark"):
+            s.base_color = "white"
+        if not (isinstance(s.accent_color, str) and len(s.accent_color) == 7 and s.accent_color.startswith("#")):
+            s.accent_color = "#6C5CE7"
         return s
 
     def save(self) -> None:

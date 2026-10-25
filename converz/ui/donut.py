@@ -181,7 +181,9 @@ class Donut(QWidget):
         # ring
         ring = QPainterPath()
         ring.addEllipse(c, R_OUT, R_OUT)
-        p.setBrush(QColor(255, 255, 255, 250))
+        ring_col = QColor(theme.CARD)
+        ring_col.setAlpha(250)
+        p.setBrush(ring_col)
         p.setPen(Qt.PenStyle.NoPen)
         p.drawPath(ring)
 
@@ -208,18 +210,20 @@ class Donut(QWidget):
                 x, y = c.x() + r_mid * math.cos(a), c.y() - r_mid * math.sin(a)
                 label, sub = display_label(act, self.sel)
                 on = i == self.hover
-                p.setPen(QColor("white") if on else theme.TEXT)
+                p.setPen(theme.ON_ACCENT if on else theme.TEXT)
                 p.setFont(big)
                 box = QRectF(x - 44, y - (16 if sub else 10), 88, 20)
                 p.drawText(box, Qt.AlignmentFlag.AlignCenter, label)
                 if sub:
                     p.setFont(small)
-                    p.setPen(QColor(255, 255, 255, 215) if on else theme.TEXT_SOFT)
+                    sub_on = QColor(theme.ON_ACCENT)
+                    sub_on.setAlpha(215)
+                    p.setPen(sub_on if on else theme.TEXT_SOFT)
                     p.drawText(QRectF(x - 46, y + 3, 92, 16), Qt.AlignmentFlag.AlignCenter, sub)
 
         # center
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(theme.ACCENT_SOFT if self.hover < 0 else QColor("#F4F3FA"))
+        p.setBrush(theme.ACCENT_SOFT if self.hover < 0 else theme.HOVER_BG)
         p.drawEllipse(c, R_IN - 6, R_IN - 6)
         self._paint_center(p, c)
 

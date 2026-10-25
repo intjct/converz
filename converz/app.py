@@ -111,6 +111,7 @@ class ConverzApp(QObject):
         super().__init__()
         self.qapp = qapp
         self.s = Settings.load()
+        theme.apply(self.s.accent_color, self.s.base_color)
         self.donut = Donut(usage_provider=lambda: self.s.usage)
         self.donut.chosen.connect(self.start_job)
         self.toast = Toast()
@@ -207,6 +208,9 @@ class ConverzApp(QObject):
     def _on_setting(self, name):
         if name in ("enabled", "trigger_key"):
             self._refresh_pause()
+        if name == "colors":
+            self.donut.update()
+            self.toast.update()
         if name in ("start_with_windows", "send_to_menu"):
             self._apply_system_settings()
 
